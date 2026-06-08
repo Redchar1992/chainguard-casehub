@@ -4,6 +4,15 @@ server:
 spring:
   application:
     name: auth-service
+  datasource:
+    url: ${POSTGRES_URL:jdbc:postgresql://localhost:5432/chainguard_casehub}
+    username: ${POSTGRES_USER:chainguard}
+    password: ${POSTGRES_PASSWORD:chainguard}
+  jpa:
+    hibernate:
+      # case-service owns the Flyway schema; auth-service reads users/roles only.
+      ddl-auto: none
+    open-in-view: false
 
 security:
   jwt:

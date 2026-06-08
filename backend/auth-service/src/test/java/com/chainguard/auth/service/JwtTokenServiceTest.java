@@ -16,11 +16,12 @@ class JwtTokenServiceTest {
                 3600
         );
 
-        String token = service.issueToken("admin@chainguard.demo", List.of("ADMIN", "ANALYST"));
+        String userId = "11111111-2222-3333-4444-555555555555";
+        String token = service.issueToken(userId, "admin@chainguard.demo", List.of("ADMIN", "ANALYST"));
         Jwt jwt = service.jwtDecoder().decode(token);
 
         assertThat(jwt.getSubject()).isEqualTo("admin@chainguard.demo");
         assertThat(jwt.getClaimAsStringList("roles")).containsExactly("ADMIN", "ANALYST");
-        assertThat(jwt.getClaimAsString("userId")).isNotBlank();
+        assertThat(jwt.getClaimAsString("userId")).isEqualTo(userId);
     }
 }

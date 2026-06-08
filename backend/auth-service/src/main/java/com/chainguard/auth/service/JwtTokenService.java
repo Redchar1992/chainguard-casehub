@@ -15,7 +15,6 @@ import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
-import java.util.UUID;
 
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 
@@ -32,14 +31,14 @@ public class JwtTokenService {
         this.expirationSeconds = expirationSeconds;
     }
 
-    public String issueToken(String username, List<String> roles) {
+    public String issueToken(String userId, String username, List<String> roles) {
         Instant now = Instant.now();
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .issuer("chainguard-auth-service")
                 .issuedAt(now)
                 .expiresAt(now.plusSeconds(expirationSeconds))
                 .subject(username)
-                .claim("userId", UUID.nameUUIDFromBytes(username.getBytes(StandardCharsets.UTF_8)).toString())
+                .claim("userId", userId)
                 .claim("roles", roles)
                 .build();
 
