@@ -1,0 +1,27 @@
+.layout {
+  min-height: 100vh;
+  background: #f5f7fb;
+}
+
+.header {
+  background: #111827;
+}
+
+.title {
+  color: #fff !important;
+  margin: 14px 0 0 !important;
+}
+
+.content {
+  padding: 32px;
+}
+
+.full-width,
+.search-bar {
+  width: 100%;
+}
+
+.risk-level {
+  margin-top: 12px;
+  font-size: 24px;
+}

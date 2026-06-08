@@ -1,0 +1,22 @@
+# OS
+.DS_Store
+
+# Java
+backend/**/target/
+*.class
+
+# Node
+frontend/**/node_modules/
+frontend/**/dist/
+
+# IDE
+.idea/
+.vscode/
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
