@@ -7,7 +7,7 @@ WALLET="${WALLET:-0x00new-blacklist-bad0}"
 printf '1) Login as demo analyst\n'
 LOGIN_RESPONSE=$(curl -sS -X POST "$API_BASE/api/auth/login" \
   -H 'Content-Type: application/json' \
-  -d '{"username":"analyst@chainguard.demo","password":"demo-password"}')
+  -d '{"username":"analyst@chainguard.demo","password":"Analyst123!"}')
 TOKEN=$(printf '%s' "$LOGIN_RESPONSE" | sed -n 's/.*"accessToken":"\([^"]*\)".*/\1/p')
 printf '%s\n\n' "$LOGIN_RESPONSE"
 
@@ -23,6 +23,10 @@ printf '%s\n\n' "$RISK_RESPONSE"
 
 RISK_SCORE=$(printf '%s' "$RISK_RESPONSE" | sed -n 's/.*"riskScore":\([0-9]*\).*/\1/p')
 RISK_LEVEL=$(printf '%s' "$RISK_RESPONSE" | sed -n 's/.*"riskLevel":"\([^"]*\)".*/\1/p')
+# Collect the triggered rule codes returned by the risk engine (real data).
+TRIGGERED_RULES=$(printf '%s' "$RISK_RESPONSE" \
+  | grep -o '"code":"[^"]*"' | sed 's/"code":"\([^"]*\)"/"\1"/' | paste -sd, -)
+TRIGGERED_RULES="[${TRIGGERED_RULES}]"
 
 printf '3) List AML rules\n'
 curl -sS "$API_BASE/api/rules" \
@@ -42,5 +46,5 @@ printf '5) Generate AI investigation summary\n'
 curl -sS -X POST "$API_BASE/api/ai/cases/$CASE_ID/summary" \
   -H 'Content-Type: application/json' \
   -H "Authorization: Bearer $TOKEN" \
-  -d "{\"walletAddress\":\"$WALLET\",\"riskScore\":$RISK_SCORE,\"riskLevel\":\"$RISK_LEVEL\",\"triggeredRules\":[\"BLACKLIST_EXPOSURE\",\"HIGH_FREQUENCY_TRANSFER\"],\"analystNotes\":[\"Counterparty appears on blacklist dataset\"]}"
+  -d "{\"walletAddress\":\"$WALLET\",\"riskScore\":$RISK_SCORE,\"riskLevel\":\"$RISK_LEVEL\",\"triggeredRules\":$TRIGGERED_RULES,\"analystNotes\":[\"Counterparty appears on blacklist dataset\"]}"
 printf '\n'
