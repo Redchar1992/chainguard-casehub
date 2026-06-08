@@ -1,138 +1,98 @@
 # ChainGuard CaseHub
 
-AI-powered crypto compliance case management platform for AML risk scoring, wallet investigation, and suspicious transaction review.
+A crypto compliance case-management platform for AML wallet risk scoring,
+investigation case workflow, and AI-assisted investigation summaries. Built as a
+Java Spring Cloud microservice backend with a React analyst console and a Vue
+admin console.
 
-## Overview
+This is a portfolio project. It is built to be honest: every claim below maps to
+code you can read and run. See [docs/interview-notes.md](docs/interview-notes.md)
+for the candid walkthrough and known limitations.
 
-ChainGuard CaseHub is a full-stack compliance platform designed for crypto exchanges and fintech teams. It helps compliance analysts detect suspicious wallet activities, investigate high-risk transactions, manage AML cases, and generate AI-assisted investigation summaries.
+## What it actually does
 
-The project is built to demonstrate end-to-end ownership across frontend, backend, microservices, data modeling, API design, and AI model integration.
-
-## Why This Project
-
-Crypto compliance teams need to review large volumes of wallet activities, transaction alerts, blacklist exposure, abnormal withdrawals, and user risk signals. Traditional dashboards are often manual and fragmented.
-
-ChainGuard CaseHub solves this by providing:
-
-- Wallet risk scoring based on AML rules
-- Case management workflow for compliance analysts
-- AI-generated investigation summaries
-- Role-based access control and audit logs
-- React analyst console and Vue admin console
-- Java Spring Cloud backend services
-- SQL, NoSQL, Redis, and RESTful APIs
-
-## Core Features
-
-### 1. Wallet Risk Scoring
-
-- Input a wallet address and retrieve transaction history
-- Apply AML rules to detect suspicious behavior
-- Generate risk score and risk level
-- Highlight blacklist exposure and abnormal patterns
-
-### 2. Compliance Case Management
-
-- Convert risk alerts into investigation cases
-- Assign cases to compliance analysts
-- Track case status: Open, Reviewing, Escalated, Closed
-- Add comments, evidence, and audit logs
-
-### 3. AI Investigator Copilot
-
-- Summarize suspicious wallet behavior
-- Generate compliance investigation notes
-- Explain risk factors in natural language
-- Suggest next investigation steps
-
-### 4. Rule Management
-
-- Configure AML rules in an admin console
-- Enable or disable individual risk rules
-- Adjust severity weights and thresholds
-- Preview rule effects before activation
-
-### 5. User and Permission Management
-
-- Admin, Compliance Analyst, Reviewer roles
-- JWT-based authentication
-- Role-based API authorization
-- Full audit trail for sensitive actions
+- **Wallet risk scoring (real).** The risk engine loads enabled AML rules and
+  their thresholds from PostgreSQL, reads the wallet's transaction history from
+  MongoDB, computes deterministic signals (transaction count, totals, max
+  outbound amount, sliding-window burst count, blacklist/sanctioned counterparty
+  hits, wallet age), and evaluates each rule against its threshold. The score is
+  the capped sum of severity-weighted impacts of the rules that fired — an
+  explainable, defensible function of real data. Results are cached in Redis.
+- **Authentication (real).** Users, roles, and assignments live in PostgreSQL.
+  Login looks up the user, verifies the password against a stored BCrypt hash,
+  derives roles from `user_roles`, and issues a signed HS256 JWT carrying the
+  user id and roles. Downstream services validate the JWT and enforce roles with
+  `@PreAuthorize`.
+- **Case workflow (real).** Cases are persisted via JPA with Flyway-managed
+  schema. Status changes go through an explicit state machine
+  (`OPEN → REVIEWING → ESCALATED → CLOSED`, with de-escalation back to
+  `REVIEWING`); illegal jumps are rejected with HTTP 409.
+- **AI investigation (real, optional).** The AI service builds a structured
+  prompt from the wallet's risk signals and calls the Anthropic Messages API,
+  parsing strict JSON into the response DTO. Without an API key it falls back to
+  a deterministic offline mock so the workflow never blocks. See
+  [AI provider configuration](#ai-provider-configuration).
+- **AML rule management (real).** Admins can create, edit, enable, and disable
+  AML rules and their JSON thresholds through the admin console / rule API.
+- **Audit logging (real).** Login, case status changes, and rule toggles are
+  written to an append-only `audit_logs` table, with the acting user resolved
+  from the JWT.
 
 ## Architecture
 
 ```text
-                      ┌────────────────────────┐
-                      │     Analyst Console    │
-                      │        React UI        │
-                      └───────────┬────────────┘
-                                  │
-                      ┌───────────▼────────────┐
-                      │      Admin Console     │
-                      │         Vue UI         │
-                      └───────────┬────────────┘
-                                  │
-                         REST / JSON APIs
-                                  │
-                    ┌─────────────▼─────────────┐
-                    │   Spring Cloud Gateway    │
-                    └─────────────┬─────────────┘
-                                  │
-        ┌─────────────────────────┼─────────────────────────┐
-        │                         │                         │
-┌───────▼────────┐       ┌────────▼────────┐       ┌────────▼────────┐
-│  Auth Service  │       │  Case Service   │       │ Risk Engine Svc │
-└───────┬────────┘       └────────┬────────┘       └────────┬────────┘
-        │                         │                         │
-        │                ┌────────▼────────┐                │
-        │                │ AI Investigator │                │
-        │                └────────┬────────┘                │
-        │                         │                         │
-┌───────▼────────┐       ┌────────▼────────┐       ┌────────▼────────┐
-│   PostgreSQL   │       │     MongoDB     │       │      Redis      │
-└────────────────┘       └─────────────────┘       └─────────────────┘
+            ┌────────────────────┐      ┌────────────────────┐
+            │  Analyst Console   │      │   Admin Console    │
+            │  React + Antd      │      │   Vue 3 + Element  │
+            └─────────┬──────────┘      └─────────┬──────────┘
+                      └─────────────┬─────────────┘
+                            REST / JSON (JWT)
+                                    │
+                       ┌────────────▼────────────┐
+                       │   Spring Cloud Gateway  │  (routing + CORS)
+                       └────────────┬────────────┘
+          ┌──────────────┬──────────┼───────────┬──────────────┐
+   ┌──────▼─────┐ ┌──────▼─────┐ ┌──▼─────────┐ ┌▼─────────────┐
+   │   Auth     │ │   Case +   │ │   Risk     │ │ AI           │
+   │  Service   │ │   Rules    │ │  Engine    │ │ Investigator │
+   └──────┬─────┘ └──────┬─────┘ └──┬───────┬─┘ └──────────────┘
+          │              │          │       │
+     ┌────▼──────────────▼──────────▼─┐  ┌──▼────┐   ┌─────────────────┐
+     │           PostgreSQL           │  │ Redis │   │ Anthropic API   │
+     │ users/roles/cases/rules/audit  │  │ cache │   │ (optional)      │
+     └────────────────────────────────┘  └───────┘   └─────────────────┘
+                                    ┌──────────────┐
+        Risk Engine also reads ───▶ │   MongoDB    │  wallet_transactions
+                                    └──────────────┘
 ```
 
-## Tech Stack
+The gateway routes `/api/auth/**`, `/api/cases/**`, `/api/rules/**`,
+`/api/risk/**`, and `/api/ai/**` to the matching service.
 
-### Frontend
+## Tech stack
 
-- React + TypeScript + Ant Design for analyst console
-- Vue 3 + TypeScript + Element Plus for admin console
-- REST API integration
-- Role-based routing
+**Backend** — Java 17, Spring Boot 3.3, Spring Cloud Gateway, Spring Security +
+OAuth2 resource server (HS256 JWT), Spring Data JPA, Spring Data MongoDB,
+Flyway, PostgreSQL, MongoDB, Redis.
 
-### Backend
+**Frontend** — React + TypeScript + Ant Design (analyst console);
+Vue 3 + TypeScript + Element Plus (admin console); Vite.
 
-- Java 17
-- Spring Boot
-- Spring Cloud Gateway
-- Spring Security + JWT
-- Spring Data JPA
-- Spring Data MongoDB
-- OpenFeign
-- OpenAPI / Swagger
+**Infra** — Docker Compose for PostgreSQL, MongoDB, and Redis. CI on GitHub
+Actions builds and tests the backend and builds both frontends.
 
-### Data and Infrastructure
+> Scope note: the gateway forwards the JWT and applies CORS; per-endpoint role
+> authorization is enforced inside each service via `@PreAuthorize`. The two
+> consoles are focused demo UIs (a single investigation workflow / rule list),
+> not full multi-page applications. There is no OpenFeign or Swagger in this
+> build.
 
-- PostgreSQL for users, cases, rules, permissions
-- MongoDB for wallet transactions and AI summaries
-- Redis for risk cache and token/session metadata
-- Docker Compose for local development
-
-### AI Integration
-
-- AI model API abstraction
-- Risk summary generation
-- Investigation report drafting
-- Prompt templates with structured JSON output
-
-## Repository Structure
+## Repository structure
 
 ```text
 .
 ├── README.md
-├── docker-compose.yml
+├── docker-compose.yml            # postgres + mongo + redis
 ├── docs/
 │   ├── product-requirements.md
 │   ├── system-design.md
@@ -140,44 +100,123 @@ ChainGuard CaseHub solves this by providing:
 │   ├── demo-flow.md
 │   └── interview-notes.md
 ├── backend/
-│   ├── pom.xml
+│   ├── pom.xml                   # multi-module parent
 │   ├── api-gateway/
 │   ├── auth-service/
-│   ├── case-service/
+│   ├── case-service/             # cases + AML rule management + audit
 │   ├── risk-engine-service/
 │   └── ai-investigator-service/
 ├── frontend/
-│   ├── analyst-console/
-│   └── admin-console/
+│   ├── analyst-console/          # React
+│   └── admin-console/            # Vue
 └── infra/
-    ├── postgres/
-    ├── mongo/
+    ├── postgres/init.sql         # schema + demo users + rules
+    ├── mongo/init.js             # seeded wallet_transactions
     └── redis/
 ```
 
-## Local Development Roadmap
+## Running locally
 
-- [ ] Initialize Spring Cloud multi-module backend
-- [x] Add PostgreSQL, MongoDB, and Redis with Docker Compose
-- [x] Implement JWT authentication and role-protected APIs
-- [x] Build wallet risk scoring APIs
-- [x] Build compliance case workflow APIs
-- [x] Integrate AI investigation summary API mock/provider abstraction
-- [x] Build React analyst console
-- [x] Build Vue admin console
-- [x] Add test data and demo scripts
-- [ ] Add CI workflow
+Databases run in Docker; the five Spring Boot services run on the host with
+`mvn spring-boot:run`. This split is intentional and consistent — there are no
+service Dockerfiles in this build.
+
+1. Start the data stores:
+
+   ```bash
+   docker compose up -d   # postgres:5432, mongo:27017, redis:6379
+   ```
+
+   `infra/postgres/init.sql` seeds the schema, demo users, and AML rules;
+   `infra/mongo/init.js` seeds wallet transaction documents. The case-service
+   also owns the canonical schema via Flyway migrations.
+
+2. Run each service in its own terminal (JDK 17 required):
+
+   ```bash
+   (cd backend/auth-service && mvn spring-boot:run)          # :8081
+   (cd backend/case-service && mvn spring-boot:run)          # :8082
+   (cd backend/risk-engine-service && mvn spring-boot:run)   # :8083
+   (cd backend/ai-investigator-service && mvn spring-boot:run) # :8084
+   (cd backend/api-gateway && mvn spring-boot:run)           # :8080
+   ```
+
+3. Run a console:
+
+   ```bash
+   (cd frontend/analyst-console && npm install && npm run dev)  # :5173
+   (cd frontend/admin-console && npm install && npm run dev)    # :5174
+   ```
+
+### Demo credentials
+
+Seeded users (BCrypt hashes in `infra/postgres/init.sql`):
+
+| Username                    | Password       | Roles                     |
+|-----------------------------|----------------|---------------------------|
+| `admin@chainguard.demo`     | `Admin123!`    | ADMIN, ANALYST, REVIEWER  |
+| `analyst@chainguard.demo`   | `Analyst123!`  | ANALYST                   |
+| `reviewer@chainguard.demo`  | `Reviewer123!` | REVIEWER                  |
+
+### AI provider configuration
+
+The AI service defaults to the offline mock (`AI_PROVIDER=mock`). To use the
+real Anthropic Messages API, set environment variables before starting the
+AI service:
+
+```bash
+export AI_PROVIDER=external
+export AI_EXTERNAL_API_KEY=sk-ant-...        # never commit this
+# optional overrides:
+export AI_EXTERNAL_MODEL=claude-3-5-haiku-latest
+```
+
+The key is read from the environment only; on any error (missing key, network,
+malformed output) the service falls back to the mock.
 
 ## Demo
 
-See [docs/demo-flow.md](docs/demo-flow.md) for an end-to-end interview demo.
-
-Quick API demo after starting local services:
+See [docs/demo-flow.md](docs/demo-flow.md). After the services are up:
 
 ```bash
 ./scripts/demo-api.sh
 ```
 
-## Interview Positioning
+It logs in, evaluates `0x00new-blacklist-bad0`, lists AML rules, creates a case,
+and generates an AI summary — all through the gateway.
 
-This project demonstrates the ability to build a compliance-oriented, AI-powered full-stack system from scratch using React, Vue, Java Spring Cloud, REST APIs, SQL/NoSQL databases, and production-style engineering practices.
+## Build and test
+
+```bash
+cd backend && mvn -q package         # compiles + runs all unit/integration tests
+cd frontend/analyst-console && npm run build
+cd frontend/admin-console && npm run build
+```
+
+Backend tests include rule-logic unit tests, an auth login integration test
+(H2), and a case-workflow integration test that drives JWT → security →
+`@PreAuthorize` → JPA → state machine → audit end to end.
+
+## Roadmap
+
+- [x] Spring Cloud multi-module backend (gateway + four services)
+- [x] PostgreSQL, MongoDB, and Redis via Docker Compose
+- [x] JWT authentication with persisted users and role-protected APIs
+- [x] Wallet risk scoring over real Postgres rules + Mongo transactions
+- [x] Compliance case workflow with a status state machine
+- [x] AML rule management API and admin console
+- [x] Audit logging for sensitive actions
+- [x] AI investigation summary with mock fallback + real Anthropic provider
+- [x] React analyst console and Vue admin console
+- [x] Demo data and demo script
+- [x] CI workflow (backend build/test + frontend builds)
+- [ ] Service Dockerfiles / Kubernetes manifests
+- [ ] Kafka-based alert ingestion and a real chain indexer
+
+## Positioning
+
+ChainGuard CaseHub demonstrates end-to-end ownership of a compliance-oriented
+full-stack system: cross-framework frontends, a Spring Cloud microservice
+backend, SQL + NoSQL + cache data modeling, JWT security with role-based
+authorization, an explainable rule engine, and a real (but safely optional) LLM
+integration.

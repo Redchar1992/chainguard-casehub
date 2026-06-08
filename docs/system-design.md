@@ -41,10 +41,14 @@ Data Layer
 
 Responsibilities:
 
-- Route requests to internal services.
-- Validate JWT tokens.
-- Apply basic CORS policy.
-- Provide a single API entry point for frontend apps.
+- Route requests to internal services (Spring Cloud Gateway).
+- Apply a CORS policy for the two console origins.
+- Provide a single API entry point for the frontend apps.
+
+The gateway forwards the `Authorization` header; JWT verification and
+per-endpoint role authorization are enforced inside each service (Spring
+Security resource server + `@PreAuthorize`), not at the gateway. There is no
+OpenFeign or Swagger/OpenAPI tooling in this build.
 
 Example routes:
 
@@ -60,32 +64,51 @@ Example routes:
 
 Responsibilities:
 
-- User login.
-- JWT issuance.
-- User and role management.
-- Password hashing.
+- Authenticate a user against the `users` table.
+- Verify the password against the stored BCrypt hash.
+- Derive roles from `user_roles` (not from the username).
+- Issue a signed HS256 JWT carrying the user id and roles.
+- Write a `USER_LOGIN` entry to `audit_logs`.
 
 Main tables:
 
 - `users`
 - `roles`
 - `user_roles`
+- `audit_logs`
+
+Read-only here; user/role administration is seeded via SQL.
 
 ### Case Service
 
 Responsibilities:
 
-- Create and update compliance cases.
-- Assign cases to analysts.
-- Manage case comments and evidence.
-- Record audit logs.
+- Create and list compliance cases.
+- Drive case status through a state machine (see below).
+- Manage AML rules and their JSON thresholds (rule API).
+- Record audit logs for status changes and rule toggles.
 
 Main tables:
 
 - `compliance_cases`
-- `case_comments`
-- `case_evidence`
+- `aml_rules`
 - `audit_logs`
+
+The case service owns the canonical schema via Flyway migrations (`V1` schema,
+`V2` demo data). Case comments and evidence are a future extension and are not
+modeled in this build.
+
+#### Case status state machine
+
+```text
+OPEN ──▶ REVIEWING ──▶ ESCALATED ──▶ CLOSED
+ │           │ ▲           │ │
+ │           │ └───────────┘ │   (ESCALATED ⇄ REVIEWING de-escalation)
+ └───────────┴──────────────┘   (any non-terminal state may go to CLOSED)
+```
+
+`CLOSED` is terminal. Illegal jumps (e.g. `OPEN → ESCALATED`, reopening a
+`CLOSED` case) are rejected with HTTP 409.
 
 ### Risk Engine Service
 
@@ -96,29 +119,43 @@ Responsibilities:
 - Return risk score and explanations.
 - Cache repeated risk results.
 
-Data sources:
+Data sources (all wired and used):
 
-- PostgreSQL for rule definitions.
-- MongoDB for wallet transaction documents.
-- Redis for risk result cache.
+- PostgreSQL (JPA) for enabled rule definitions and JSON thresholds.
+- MongoDB (Spring Data Mongo) for the wallet's transaction document.
+- Redis for the risk result cache (graceful degradation if unavailable).
 
-Example rules:
+The engine derives deterministic features from the transactions — count,
+totals, max outbound amount, sliding-window burst count, blacklist/sanctioned
+hits, wallet age — then evaluates each enabled rule against its threshold. The
+score is the capped sum of severity-weighted impacts of the rules that fired.
+
+Implemented rules:
 
 | Rule | Description | Severity |
 |---|---|---|
-| BLACKLIST_EXPOSURE | Wallet interacted with blacklisted address | Critical |
-| HIGH_FREQUENCY_TRANSFER | Too many transfers in a short time window | High |
-| NEW_ADDRESS_LARGE_WITHDRAWAL | New address receives large withdrawal | High |
-| MULTI_HOP_OBFUSCATION | Funds moved across many hops quickly | Medium |
+| BLACKLIST_EXPOSURE | Transaction with a blacklisted/sanctioned counterparty | Critical |
+| HIGH_FREQUENCY_TRANSFER | Burst count within the window exceeds threshold | High |
+| NEW_ADDRESS_LARGE_WITHDRAWAL | New wallet moves a large outbound amount | High |
+| LARGE_AGGREGATE_VOLUME | Aggregate USD volume exceeds threshold | Medium |
+
+`MULTI_HOP_OBFUSCATION` is defined in `aml_rules` but ships **disabled** and has
+no evaluator yet; it is a placeholder for graph-based analysis.
 
 ### AI Investigator Service
 
 Responsibilities:
 
-- Build structured prompts from case and risk data.
-- Call AI model API through provider abstraction.
-- Parse structured JSON response.
-- Return summary, risk explanation, and next steps.
+- Build a structured system + user prompt from the wallet's risk signals.
+- Call the Anthropic Messages API (`POST {baseUrl}/v1/messages`) through a
+  provider abstraction, with the API key read from `AI_EXTERNAL_API_KEY`.
+- Parse the model's JSON output into the response DTO.
+- Return summary, risk factors, recommended actions, and confidence.
+
+The provider abstraction has two implementations: a deterministic offline
+`MockAiInvestigationProvider` (default, and the fallback on any external error)
+and the real `ExternalAiInvestigationProvider` (active when
+`ai.provider=external`). The compliance workflow never blocks on the AI layer.
 
 AI output schema:
 
@@ -189,8 +226,8 @@ Request:
 
 ```json
 {
-  "username": "analyst@example.com",
-  "password": "password"
+  "username": "analyst@chainguard.demo",
+  "password": "Analyst123!"
 }
 ```
 
@@ -200,7 +237,9 @@ Response:
 {
   "accessToken": "jwt-token",
   "tokenType": "Bearer",
-  "expiresIn": 3600
+  "expiresIn": 3600,
+  "userId": "….",
+  "roles": ["ANALYST"]
 }
 ```
 
@@ -263,12 +302,12 @@ Response:
 
 ## 6. Security Design
 
-- Passwords are hashed with BCrypt.
-- JWT includes user ID and roles.
-- Gateway validates token format.
-- Services validate role permissions for sensitive operations.
+- Passwords are verified against stored BCrypt hashes.
+- JWT (HS256) includes the persisted user id and roles.
+- Each service is an OAuth2 resource server that verifies the JWT signature.
+- Services enforce role permissions per endpoint with `@PreAuthorize`.
 - Audit logs are append-only from the application perspective.
-- AI prompts should not include unnecessary PII.
+- AI prompts include only the risk signals needed for the summary.
 
 ## 7. Failure Handling
 
@@ -290,9 +329,12 @@ Response:
 
 ## 8. Future Improvements
 
+CI already runs on GitHub Actions (backend build/test + both frontend builds).
+Remaining ideas:
+
+- Service Dockerfiles and Kubernetes deployment manifests.
 - Kafka-based event pipeline for risk alerts.
-- Real blockchain indexer integration.
+- Real blockchain indexer integration and a graph-based MULTI_HOP evaluator.
 - KYC provider integration.
 - Graph visualization for wallet relationships.
 - Fine-grained workflow approval engine.
-- CI/CD and Kubernetes deployment manifests.

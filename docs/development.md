@@ -100,7 +100,7 @@ Manual calls through API Gateway:
 ```bash
 TOKEN=$(curl -sS -X POST http://localhost:8080/api/auth/login \
   -H 'Content-Type: application/json' \
-  -d '{"username":"analyst@chainguard.demo","password":"demo-password"}' \
+  -d '{"username":"analyst@chainguard.demo","password":"Analyst123!"}' \
   | sed -n 's/.*"accessToken":"\([^"]*\)".*/\1/p')
 ```
 
@@ -150,17 +150,33 @@ curl -X POST http://localhost:8080/api/ai/cases/00000000-0000-0000-0000-00000000
 
 ## AI Provider Configuration
 
-The AI Investigator service uses the deterministic mock provider by default:
+The AI Investigator service uses the deterministic offline mock provider by
+default:
 
 ```bash
 AI_PROVIDER=mock
 ```
 
-To call a generic external AI-compatible endpoint that returns the expected JSON schema:
+To use the real Anthropic Messages API, set the provider and key via the
+environment (the key is never hardcoded or committed):
 
 ```bash
-AI_PROVIDER=external
-AI_EXTERNAL_ENDPOINT=https://example.com/ai/summary
-AI_EXTERNAL_API_KEY=replace-me
-AI_EXTERNAL_MODEL=default
+export AI_PROVIDER=external
+export AI_EXTERNAL_API_KEY=sk-ant-...
+# optional overrides:
+export AI_EXTERNAL_MODEL=claude-3-5-haiku-latest
+export AI_EXTERNAL_BASE_URL=https://api.anthropic.com
 ```
+
+On any failure (missing key, network error, malformed model output) the service
+falls back to the mock provider so the workflow is never blocked.
+
+## Run Tests
+
+```bash
+cd backend
+mvn -q test
+```
+
+This runs the rule-engine unit tests, the auth login integration test, and the
+case-workflow integration test (both use in-memory H2).

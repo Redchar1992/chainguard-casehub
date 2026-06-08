@@ -14,9 +14,14 @@ Show an end-to-end compliance investigation workflow:
 
 ## 2. Start Dependencies
 
+Databases run in Docker; the services run on the host via `mvn spring-boot:run`.
+
 ```bash
-docker compose up -d
+docker compose up -d   # postgres + mongo + redis, seeded from infra/
 ```
+
+Demo login: `analyst@chainguard.demo` / `Analyst123!` (analyst),
+`admin@chainguard.demo` / `Admin123!` (admin, for rule management).
 
 ## 3. Start Backend Services
 
@@ -61,19 +66,20 @@ Open:
 http://localhost:5173
 ```
 
-## 5. Demo Wallet
+## 5. Demo Wallets
 
-Use:
+The risk engine evaluates real rules over the seeded MongoDB transactions, so
+different demo wallets exercise different signals:
 
-```text
-0x00new-blacklist-bad0
-```
+| Wallet | Triggers | Result |
+|---|---|---|
+| `0x00new-blacklist-bad0` | BLACKLIST_EXPOSURE + NEW_ADDRESS_LARGE_WITHDRAWAL | score 70, HIGH |
+| `0xhotwallet-frequent` | HIGH_FREQUENCY_TRANSFER | score 25, MEDIUM |
+| `0xcleanwallet-lowrisk` | none | score 0, LOW |
 
-Expected rule hits:
-
-- BLACKLIST_EXPOSURE
-- HIGH_FREQUENCY_TRANSFER
-- NEW_ADDRESS_LARGE_WITHDRAWAL
+The headline demo wallet is `0x00new-blacklist-bad0`. (It has only three
+transactions, so the high-frequency rule does not fire — use
+`0xhotwallet-frequent` to demonstrate burst detection.)
 
 ## 6. API Demo Script
 
@@ -103,11 +109,12 @@ I will demo a crypto AML investigation flow. First, the analyst logs in and rece
 
 ## 8. What To Emphasize
 
-- JWT authentication and protected APIs.
+- JWT authentication against persisted users (BCrypt) and role-protected APIs.
 - Spring Cloud Gateway as a single entry point.
-- Explainable risk scoring instead of black-box scoring.
-- PostgreSQL persistence for cases.
+- Explainable risk scoring over real Postgres rules + Mongo transactions.
+- PostgreSQL persistence for cases, with a status state machine.
 - Redis cache for repeated risk evaluation.
-- Human-in-the-loop AI summary generation.
+- Audit logging on login, status change, and rule toggle.
+- Human-in-the-loop AI summary (Anthropic provider with offline mock fallback).
 - React analyst console connected to real backend APIs.
 - Vue admin console connected to AML rule management APIs.

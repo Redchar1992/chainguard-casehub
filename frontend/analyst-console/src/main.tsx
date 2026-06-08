@@ -114,7 +114,7 @@ function App() {
       try {
         const response = await apiRequest<{ accessToken: string }>('/api/auth/login', null, {
           method: 'POST',
-          body: JSON.stringify({ username: 'analyst@chainguard.demo', password: 'demo-password' }),
+          body: JSON.stringify({ username: 'analyst@chainguard.demo', password: 'Analyst123!' }),
         });
         setToken(response.accessToken);
       } catch {

@@ -16,9 +16,9 @@ This project was designed around a real compliance engineering scenario. Crypto 
 
 - I used Spring Cloud Gateway as a unified API entry point.
 - I separated core domains into services: auth, cases, risk scoring, and AI investigation.
-- PostgreSQL stores structured business data such as users, cases, rules, and audit logs.
-- MongoDB stores flexible wallet transaction documents and future AI analysis artifacts.
-- Redis is planned for repeated wallet risk result caching.
+- PostgreSQL stores structured business data: users, roles, cases, rules, and audit logs.
+- MongoDB stores wallet transaction documents that the risk engine reads to evaluate rules.
+- Redis caches repeated wallet risk results, with graceful degradation if it is unavailable.
 - React is used for the analyst console because it is suitable for interactive investigation workflows.
 - Vue is used for the admin console to demonstrate cross-framework frontend capability.
 
@@ -34,7 +34,16 @@ AI-generated summaries are treated as drafts. Analysts can review, edit, accept,
 
 ### Auditability
 
-Sensitive actions such as case status changes and rule updates are designed to be written to audit logs. This makes investigations traceable.
+Sensitive actions — login, case status changes, and rule toggles — are written
+to an append-only `audit_logs` table, with the acting user resolved from the
+JWT. This makes investigations traceable.
+
+### Case Lifecycle as a State Machine
+
+Case status is governed by an explicit state machine
+(`OPEN → REVIEWING → ESCALATED → CLOSED`, with de-escalation back to
+`REVIEWING`). Illegal jumps are rejected with HTTP 409 rather than silently
+applied, which matters for an auditable compliance workflow.
 
 ### Service Separation
 
@@ -72,7 +81,7 @@ Solution:
 
 - Built an AI-powered crypto compliance case management platform using React, Vue, Java Spring Cloud, PostgreSQL, MongoDB, and Redis.
 - Designed AML risk scoring APIs that return explainable rule hits, severity levels, score impact, and wallet risk classification.
-- Implemented a compliance case workflow covering case creation, assignment-ready status management, auditability, and AI-assisted investigation drafts.
+- Implemented a compliance case workflow with an explicit status state machine, audit logging, and AI-assisted investigation drafts.
 - Created separate React analyst console and Vue admin console to support wallet investigation and AML rule management workflows.
 - Designed microservice architecture with Spring Cloud Gateway, Auth Service, Case Service, Risk Engine Service, and AI Investigator Service.
 
@@ -92,4 +101,8 @@ A: Risk scoring must be deterministic, explainable, and testable. AI generation 
 
 ### Q: What would you improve next?
 
-A: I would add real persistence through Spring Data JPA and MongoDB repositories, implement JWT security, add Redis caching for risk results, add test coverage, and introduce Kafka for asynchronous alert ingestion.
+A: Persistence (JPA + MongoDB), JWT security, Redis caching, the rule engine, and
+test coverage are already in place. Next I would add service Dockerfiles and
+Kubernetes manifests, introduce Kafka for asynchronous alert ingestion, build a
+graph-based MULTI_HOP evaluator backed by a real chain indexer, and flesh out the
+two consoles into full multi-page applications with case comments and evidence.
