@@ -25,6 +25,10 @@ body {
   color: #dc2626;
 }
 
+.status-alert {
+  margin-bottom: 24px;
+}
+
 .table-card {
   margin-top: 24px;
 }

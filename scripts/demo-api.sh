@@ -2,7 +2,7 @@
 set -euo pipefail
 
 API_BASE="${API_BASE:-http://localhost:8080}"
-WALLET="${WALLET:-0x00new-blacklist-bad}"
+WALLET="${WALLET:-0x00new-blacklist-bad0}"
 
 printf '1) Login as demo analyst\n'
 LOGIN_RESPONSE=$(curl -sS -X POST "$API_BASE/api/auth/login" \
@@ -24,7 +24,12 @@ printf '%s\n\n' "$RISK_RESPONSE"
 RISK_SCORE=$(printf '%s' "$RISK_RESPONSE" | sed -n 's/.*"riskScore":\([0-9]*\).*/\1/p')
 RISK_LEVEL=$(printf '%s' "$RISK_RESPONSE" | sed -n 's/.*"riskLevel":"\([^"]*\)".*/\1/p')
 
-printf '3) Create compliance case\n'
+printf '3) List AML rules\n'
+curl -sS "$API_BASE/api/rules" \
+  -H "Authorization: Bearer $TOKEN"
+printf '\n\n'
+
+printf '4) Create compliance case\n'
 CASE_RESPONSE=$(curl -sS -X POST "$API_BASE/api/cases" \
   -H 'Content-Type: application/json' \
   -H "Authorization: Bearer $TOKEN" \
@@ -33,7 +38,7 @@ printf '%s\n\n' "$CASE_RESPONSE"
 
 CASE_ID=$(printf '%s' "$CASE_RESPONSE" | sed -n 's/.*"id":"\([^"]*\)".*/\1/p')
 
-printf '4) Generate AI investigation summary\n'
+printf '5) Generate AI investigation summary\n'
 curl -sS -X POST "$API_BASE/api/ai/cases/$CASE_ID/summary" \
   -H 'Content-Type: application/json' \
   -H "Authorization: Bearer $TOKEN" \

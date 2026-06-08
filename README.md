@@ -164,7 +164,7 @@ ChainGuard CaseHub solves this by providing:
 - [x] Build compliance case workflow APIs
 - [x] Integrate AI investigation summary API mock/provider abstraction
 - [x] Build React analyst console
-- [ ] Build Vue admin console
+- [x] Build Vue admin console
 - [x] Add test data and demo scripts
 - [ ] Add CI workflow
 

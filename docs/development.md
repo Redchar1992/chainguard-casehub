@@ -107,7 +107,14 @@ TOKEN=$(curl -sS -X POST http://localhost:8080/api/auth/login \
 ### Evaluate Wallet Risk
 
 ```bash
-curl http://localhost:8080/api/risk/wallets/0x00new-blacklist-bad \
+curl http://localhost:8080/api/risk/wallets/0x00new-blacklist-bad0 \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### List AML Rules
+
+```bash
+curl http://localhost:8080/api/rules \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -118,12 +125,13 @@ curl -X POST http://localhost:8080/api/cases \
   -H 'Content-Type: application/json' \
   -H "Authorization: Bearer $TOKEN" \
   -d '{
-    "walletAddress":"0x00new-blacklist-bad",
+    "walletAddress":"0x00new-blacklist-bad0",
     "title":"High-risk wallet investigation",
     "riskScore":90,
     "riskLevel":"CRITICAL"
   }'
 ```
+
 
 ### Generate AI Summary
 
@@ -132,10 +140,27 @@ curl -X POST http://localhost:8080/api/ai/cases/00000000-0000-0000-0000-00000000
   -H 'Content-Type: application/json' \
   -H "Authorization: Bearer $TOKEN" \
   -d '{
-    "walletAddress":"0x00new-blacklist-bad",
+    "walletAddress":"0x00new-blacklist-bad0",
     "riskScore":90,
     "riskLevel":"CRITICAL",
     "triggeredRules":["BLACKLIST_EXPOSURE", "HIGH_FREQUENCY_TRANSFER"],
     "analystNotes":["Counterparty appears on blacklist dataset"]
   }'
+```
+
+## AI Provider Configuration
+
+The AI Investigator service uses the deterministic mock provider by default:
+
+```bash
+AI_PROVIDER=mock
+```
+
+To call a generic external AI-compatible endpoint that returns the expected JSON schema:
+
+```bash
+AI_PROVIDER=external
+AI_EXTERNAL_ENDPOINT=https://example.com/ai/summary
+AI_EXTERNAL_API_KEY=replace-me
+AI_EXTERNAL_MODEL=default
 ```

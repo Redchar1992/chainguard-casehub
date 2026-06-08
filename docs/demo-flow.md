@@ -66,7 +66,7 @@ http://localhost:5173
 Use:
 
 ```text
-0x00new-blacklist-bad
+0x00new-blacklist-bad0
 ```
 
 Expected rule hits:
@@ -87,6 +87,7 @@ The script will:
 
 - Login and extract JWT.
 - Call risk scoring through the gateway.
+- List AML rules from the Case Service rule management API.
 - Create a case in PostgreSQL.
 - Generate an AI summary.
 
@@ -109,3 +110,4 @@ I will demo a crypto AML investigation flow. First, the analyst logs in and rece
 - Redis cache for repeated risk evaluation.
 - Human-in-the-loop AI summary generation.
 - React analyst console connected to real backend APIs.
+- Vue admin console connected to AML rule management APIs.

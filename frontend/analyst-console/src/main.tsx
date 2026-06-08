@@ -41,7 +41,7 @@ type AiSummary = {
 const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:8080';
 
 const demoRisk: WalletRisk = {
-  walletAddress: '0x00new-blacklist-bad',
+  walletAddress: '0x00new-blacklist-bad0',
   riskScore: 90,
   riskLevel: 'CRITICAL',
   cached: false,
@@ -100,7 +100,7 @@ async function apiRequest<T>(path: string, token: string | null, options: Reques
 }
 
 function App() {
-  const [wallet, setWallet] = useState('0x00new-blacklist-bad');
+  const [wallet, setWallet] = useState('0x00new-blacklist-bad0');
   const [risk, setRisk] = useState<WalletRisk>(demoRisk);
   const [token, setToken] = useState<string | null>(null);
   const [createdCase, setCreatedCase] = useState<CaseResponse | null>(null);

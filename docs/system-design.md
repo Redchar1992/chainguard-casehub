@@ -52,6 +52,7 @@ Example routes:
 |---|---|
 | `/api/auth/**` | Auth Service |
 | `/api/cases/**` | Case Service |
+| `/api/rules/**` | Case Service |
 | `/api/risk/**` | Risk Engine Service |
 | `/api/ai/**` | AI Investigator Service |
 

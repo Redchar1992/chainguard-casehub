@@ -9,6 +9,13 @@ security:
   jwt:
     secret: ${SECURITY_JWT_SECRET:chainguard-demo-secret-key-must-be-at-least-32-bytes}
 
+ai:
+  provider: ${AI_PROVIDER:mock}
+  external:
+    endpoint: ${AI_EXTERNAL_ENDPOINT:}
+    api-key: ${AI_EXTERNAL_API_KEY:}
+    model: ${AI_EXTERNAL_MODEL:default}
+
 management:
   endpoints:
     web:

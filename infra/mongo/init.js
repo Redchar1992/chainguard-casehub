@@ -1,7 +1,7 @@
 db = db.getSiblingDB('chainguard_casehub');
 
 db.wallet_transactions.insertOne({
-  walletAddress: '0x00new-blacklist-bad',
+  walletAddress: '0x00new-blacklist-bad0',
   transactions: [
     {
       txHash: '0xabc001',
