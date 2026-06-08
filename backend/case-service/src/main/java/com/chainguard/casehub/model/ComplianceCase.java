@@ -107,8 +107,27 @@ public class ComplianceCase {
         return updatedAt;
     }
 
-    public void updateStatus(CaseStatus status) {
-        this.status = status;
+    /**
+     * Applies a lifecycle transition, rejecting illegal jumps. A no-op
+     * transition to the same status is allowed (idempotent).
+     *
+     * @return the previous status
+     */
+    public CaseStatus transitionTo(CaseStatus target) {
+        if (target == null) {
+            throw new com.chainguard.casehub.service.IllegalStatusTransitionException("Target status must not be null");
+        }
+        if (target == this.status) {
+            return this.status;
+        }
+        if (!this.status.canTransitionTo(target)) {
+            throw new com.chainguard.casehub.service.IllegalStatusTransitionException(
+                    "Illegal status transition: " + this.status + " -> " + target
+                            + " (allowed: " + this.status.allowedTransitions() + ")");
+        }
+        CaseStatus previous = this.status;
+        this.status = target;
+        return previous;
     }
 
     public void assignTo(UUID assigneeId) {

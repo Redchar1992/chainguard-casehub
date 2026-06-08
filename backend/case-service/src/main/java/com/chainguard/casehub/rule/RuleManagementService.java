@@ -1,5 +1,6 @@
 package com.chainguard.casehub.rule;
 
+import com.chainguard.casehub.audit.AuditService;
 import com.chainguard.casehub.rule.dto.AmlRuleRequest;
 import com.chainguard.casehub.rule.dto.AmlRuleResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,10 +15,12 @@ import java.util.UUID;
 public class RuleManagementService {
     private final AmlRuleRepository repository;
     private final ObjectMapper objectMapper;
+    private final AuditService auditService;
 
-    public RuleManagementService(AmlRuleRepository repository, ObjectMapper objectMapper) {
+    public RuleManagementService(AmlRuleRepository repository, ObjectMapper objectMapper, AuditService auditService) {
         this.repository = repository;
         this.objectMapper = objectMapper;
+        this.auditService = auditService;
     }
 
     @Transactional(readOnly = true)
@@ -51,12 +54,19 @@ public class RuleManagementService {
     public AmlRuleResponse setEnabled(UUID id, boolean enabled) {
         AmlRule rule = findRule(id);
         rule.setEnabled(enabled);
-        return toResponse(repository.save(rule));
+        AmlRuleResponse response = toResponse(repository.save(rule));
+        auditService.record(
+                "AML_RULE_TOGGLE",
+                "AML_RULE",
+                id.toString(),
+                Map.of("code", rule.getCode(), "enabled", enabled, "version", rule.getVersion())
+        );
+        return response;
     }
 
     private AmlRule findRule(UUID id) {
         return repository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("AML rule not found: " + id));
+                .orElseThrow(() -> new com.chainguard.casehub.service.ResourceNotFoundException("AML rule not found: " + id));
     }
 
     private String normalizeJson(String json) {

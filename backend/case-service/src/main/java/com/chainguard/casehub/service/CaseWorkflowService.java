@@ -1,5 +1,6 @@
 package com.chainguard.casehub.service;
 
+import com.chainguard.casehub.audit.AuditService;
 import com.chainguard.casehub.dto.CaseResponse;
 import com.chainguard.casehub.dto.CreateCaseRequest;
 import com.chainguard.casehub.model.CaseStatus;
@@ -9,14 +10,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
 public class CaseWorkflowService {
     private final ComplianceCaseRepository repository;
+    private final AuditService auditService;
 
-    public CaseWorkflowService(ComplianceCaseRepository repository) {
+    public CaseWorkflowService(ComplianceCaseRepository repository, AuditService auditService) {
         this.repository = repository;
+        this.auditService = auditService;
     }
 
     @Transactional
@@ -51,13 +55,20 @@ public class CaseWorkflowService {
     @Transactional
     public CaseResponse updateStatus(UUID id, CaseStatus status) {
         ComplianceCase complianceCase = findCase(id);
-        complianceCase.updateStatus(status);
-        return toResponse(repository.save(complianceCase));
+        CaseStatus previous = complianceCase.transitionTo(status);
+        ComplianceCase saved = repository.save(complianceCase);
+        auditService.record(
+                "CASE_STATUS_CHANGE",
+                "CASE",
+                id.toString(),
+                Map.of("from", previous.name(), "to", status.name())
+        );
+        return toResponse(saved);
     }
 
     private ComplianceCase findCase(UUID id) {
         return repository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Case not found: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Case not found: " + id));
     }
 
     private CaseResponse toResponse(ComplianceCase complianceCase) {

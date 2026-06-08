@@ -52,7 +52,19 @@ public class CaseController {
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasAnyRole('ANALYST', 'REVIEWER', 'ADMIN')")
     public CaseResponse updateStatus(@PathVariable UUID id, @RequestBody Map<String, String> body) {
-        return service.updateStatus(id, CaseStatus.valueOf(body.get("status")));
+        String status = body == null ? null : body.get("status");
+        if (status == null || status.isBlank()) {
+            throw new IllegalArgumentException("Field 'status' is required");
+        }
+        return service.updateStatus(id, parseStatus(status));
+    }
+
+    private CaseStatus parseStatus(String status) {
+        try {
+            return CaseStatus.valueOf(status.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException("Unknown case status: " + status);
+        }
     }
 
     @GetMapping("/health")

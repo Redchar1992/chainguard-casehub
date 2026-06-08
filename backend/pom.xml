@@ -60,6 +60,9 @@
                     <configuration>
                         <source>${java.version}</source>
                         <target>${java.version}</target>
+                        <!-- Retain method parameter names so Spring MVC can bind
+                             @PathVariable/@RequestParam without explicit names. -->
+                        <parameters>true</parameters>
                     </configuration>
                 </plugin>
             </plugins>
