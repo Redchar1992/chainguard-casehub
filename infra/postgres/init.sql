@@ -60,12 +60,13 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 
 INSERT INTO roles(name) VALUES ('ADMIN'), ('ANALYST'), ('REVIEWER') ON CONFLICT DO NOTHING;
 
-INSERT INTO aml_rules(code, name, severity, threshold) VALUES
-('BLACKLIST_EXPOSURE', 'Blacklist Exposure', 'CRITICAL', '{"counterpartyTag":"blacklist"}'),
-('HIGH_FREQUENCY_TRANSFER', 'High Frequency Transfer', 'HIGH', '{"count":20,"windowMinutes":30}'),
-('NEW_ADDRESS_LARGE_WITHDRAWAL', 'New Address Large Withdrawal', 'HIGH', '{"addressAgeDays":7,"amountUsd":10000}'),
-('LARGE_AGGREGATE_VOLUME', 'Large Aggregate Volume', 'MEDIUM', '{"totalUsd":100000}'),
-('MULTI_HOP_OBFUSCATION', 'Multi-hop Obfuscation', 'MEDIUM', '{"hops":4,"windowMinutes":60}')
+-- MULTI_HOP_OBFUSCATION ships disabled (no evaluator yet); the others are active.
+INSERT INTO aml_rules(code, name, severity, threshold, enabled) VALUES
+('BLACKLIST_EXPOSURE', 'Blacklist Exposure', 'CRITICAL', '{"counterpartyTag":"blacklist"}', TRUE),
+('HIGH_FREQUENCY_TRANSFER', 'High Frequency Transfer', 'HIGH', '{"count":20,"windowMinutes":30}', TRUE),
+('NEW_ADDRESS_LARGE_WITHDRAWAL', 'New Address Large Withdrawal', 'HIGH', '{"addressAgeDays":7,"amountUsd":10000}', TRUE),
+('LARGE_AGGREGATE_VOLUME', 'Large Aggregate Volume', 'MEDIUM', '{"totalUsd":100000}', TRUE),
+('MULTI_HOP_OBFUSCATION', 'Multi-hop Obfuscation', 'MEDIUM', '{"hops":4,"windowMinutes":60}', FALSE)
 ON CONFLICT DO NOTHING;
 
 -- Demo users. Password hashes are BCrypt; plaintext is documented in the README.

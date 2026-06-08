@@ -74,7 +74,7 @@ different demo wallets exercise different signals:
 | Wallet | Triggers | Result |
 |---|---|---|
 | `0x00new-blacklist-bad0` | BLACKLIST_EXPOSURE + NEW_ADDRESS_LARGE_WITHDRAWAL | score 70, HIGH |
-| `0xhotwallet-frequent` | HIGH_FREQUENCY_TRANSFER | score 25, MEDIUM |
+| `0xhotwallet-frequent` | HIGH_FREQUENCY_TRANSFER | score 25, LOW |
 | `0xcleanwallet-lowrisk` | none | score 0, LOW |
 
 The headline demo wallet is `0x00new-blacklist-bad0`. (It has only three
