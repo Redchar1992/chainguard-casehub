@@ -2,14 +2,17 @@ package com.chainguard.ai.provider;
 
 import com.chainguard.ai.dto.AiSummaryRequest;
 import com.chainguard.ai.dto.AiSummaryResponse;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Deterministic, offline fallback provider. It is always registered so the
+ * external provider can delegate to it on failure, and it is the sole provider
+ * (hence the one injected) when {@code ai.provider} is not {@code external}.
+ */
 @Component
-@ConditionalOnProperty(name = "ai.provider", havingValue = "mock", matchIfMissing = true)
 public class MockAiInvestigationProvider implements AiInvestigationProvider {
 
     @Override
