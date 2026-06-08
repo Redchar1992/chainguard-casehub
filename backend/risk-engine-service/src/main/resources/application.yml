@@ -4,11 +4,23 @@ server:
 spring:
   application:
     name: risk-engine-service
+  datasource:
+    url: ${POSTGRES_URL:jdbc:postgresql://localhost:5432/chainguard_casehub}
+    username: ${POSTGRES_USER:chainguard}
+    password: ${POSTGRES_PASSWORD:chainguard}
+  jpa:
+    hibernate:
+      # case-service owns the Flyway schema; this service reads aml_rules only.
+      ddl-auto: none
+    open-in-view: false
   data:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       timeout: 500ms
+    mongodb:
+      uri: ${MONGO_URI:mongodb://localhost:27017/chainguard_casehub}
+      database: ${MONGO_DATABASE:chainguard_casehub}
 
 security:
   jwt:
