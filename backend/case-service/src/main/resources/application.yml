@@ -4,6 +4,21 @@ server:
 spring:
   application:
     name: case-service
+  datasource:
+    url: ${POSTGRES_URL:jdbc:postgresql://localhost:5432/chainguard_casehub}
+    username: ${POSTGRES_USER:chainguard}
+    password: ${POSTGRES_PASSWORD:chainguard}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+
+security:
+  jwt:
+    secret: ${SECURITY_JWT_SECRET:chainguard-demo-secret-key-must-be-at-least-32-bytes}
 
 management:
   endpoints:

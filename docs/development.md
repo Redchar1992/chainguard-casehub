@@ -87,17 +87,36 @@ http://localhost:5174
 
 ## Demo API Calls
 
+The protected APIs require a JWT. The easiest way to exercise the flow is:
+
+```bash
+./scripts/demo-api.sh
+```
+
+Manual calls through API Gateway:
+
+### Login
+
+```bash
+TOKEN=$(curl -sS -X POST http://localhost:8080/api/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"analyst@chainguard.demo","password":"demo-password"}' \
+  | sed -n 's/.*"accessToken":"\([^"]*\)".*/\1/p')
+```
+
 ### Evaluate Wallet Risk
 
 ```bash
-curl http://localhost:8083/api/risk/wallets/0x00new-blacklist-bad
+curl http://localhost:8080/api/risk/wallets/0x00new-blacklist-bad \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
 ### Create Case
 
 ```bash
-curl -X POST http://localhost:8082/api/cases \
+curl -X POST http://localhost:8080/api/cases \
   -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TOKEN" \
   -d '{
     "walletAddress":"0x00new-blacklist-bad",
     "title":"High-risk wallet investigation",
@@ -109,8 +128,9 @@ curl -X POST http://localhost:8082/api/cases \
 ### Generate AI Summary
 
 ```bash
-curl -X POST http://localhost:8084/api/ai/cases/00000000-0000-0000-0000-000000000000/summary \
+curl -X POST http://localhost:8080/api/ai/cases/00000000-0000-0000-0000-000000000000/summary \
   -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TOKEN" \
   -d '{
     "walletAddress":"0x00new-blacklist-bad",
     "riskScore":90,

@@ -4,6 +4,15 @@ server:
 spring:
   application:
     name: risk-engine-service
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 500ms
+
+security:
+  jwt:
+    secret: ${SECURITY_JWT_SECRET:chainguard-demo-secret-key-must-be-at-least-32-bytes}
 
 management:
   endpoints:

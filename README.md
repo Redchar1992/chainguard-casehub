@@ -136,6 +136,8 @@ ChainGuard CaseHub solves this by providing:
 ├── docs/
 │   ├── product-requirements.md
 │   ├── system-design.md
+│   ├── development.md
+│   ├── demo-flow.md
 │   └── interview-notes.md
 ├── backend/
 │   ├── pom.xml
@@ -156,15 +158,25 @@ ChainGuard CaseHub solves this by providing:
 ## Local Development Roadmap
 
 - [ ] Initialize Spring Cloud multi-module backend
-- [ ] Add PostgreSQL, MongoDB, and Redis with Docker Compose
-- [ ] Implement JWT authentication and RBAC
-- [ ] Build wallet risk scoring APIs
-- [ ] Build compliance case workflow APIs
-- [ ] Integrate AI investigation summary API
-- [ ] Build React analyst console
+- [x] Add PostgreSQL, MongoDB, and Redis with Docker Compose
+- [x] Implement JWT authentication and role-protected APIs
+- [x] Build wallet risk scoring APIs
+- [x] Build compliance case workflow APIs
+- [x] Integrate AI investigation summary API mock/provider abstraction
+- [x] Build React analyst console
 - [ ] Build Vue admin console
-- [ ] Add test data and demo scripts
+- [x] Add test data and demo scripts
 - [ ] Add CI workflow
+
+## Demo
+
+See [docs/demo-flow.md](docs/demo-flow.md) for an end-to-end interview demo.
+
+Quick API demo after starting local services:
+
+```bash
+./scripts/demo-api.sh
+```
 
 ## Interview Positioning
 

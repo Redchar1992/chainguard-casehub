@@ -5,6 +5,10 @@ spring:
   application:
     name: ai-investigator-service
 
+security:
+  jwt:
+    secret: ${SECURITY_JWT_SECRET:chainguard-demo-secret-key-must-be-at-least-32-bytes}
+
 management:
   endpoints:
     web:

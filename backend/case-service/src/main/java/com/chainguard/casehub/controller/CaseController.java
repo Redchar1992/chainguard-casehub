@@ -5,12 +5,14 @@ import com.chainguard.casehub.dto.CreateCaseRequest;
 import com.chainguard.casehub.model.CaseStatus;
 import com.chainguard.casehub.service.CaseWorkflowService;
 import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -27,21 +29,28 @@ public class CaseController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ANALYST', 'ADMIN')")
     public CaseResponse createCase(@Valid @RequestBody CreateCaseRequest request) {
         return service.createCase(request);
     }
 
     @GetMapping
-    public List<CaseResponse> listCases() {
-        return service.listCases();
+    @PreAuthorize("hasAnyRole('ANALYST', 'REVIEWER', 'ADMIN')")
+    public List<CaseResponse> listCases(
+            @RequestParam(required = false) CaseStatus status,
+            @RequestParam(required = false) String walletAddress
+    ) {
+        return service.listCases(status, walletAddress);
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ANALYST', 'REVIEWER', 'ADMIN')")
     public CaseResponse getCase(@PathVariable UUID id) {
         return service.getCase(id);
     }
 
     @PatchMapping("/{id}/status")
+    @PreAuthorize("hasAnyRole('ANALYST', 'REVIEWER', 'ADMIN')")
     public CaseResponse updateStatus(@PathVariable UUID id, @RequestBody Map<String, String> body) {
         return service.updateStatus(id, CaseStatus.valueOf(body.get("status")));
     }

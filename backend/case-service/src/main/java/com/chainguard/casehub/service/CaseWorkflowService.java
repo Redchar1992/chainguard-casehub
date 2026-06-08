@@ -3,62 +3,74 @@ package com.chainguard.casehub.service;
 import com.chainguard.casehub.dto.CaseResponse;
 import com.chainguard.casehub.dto.CreateCaseRequest;
 import com.chainguard.casehub.model.CaseStatus;
+import com.chainguard.casehub.model.ComplianceCase;
+import com.chainguard.casehub.repository.ComplianceCaseRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class CaseWorkflowService {
-    private final ConcurrentHashMap<UUID, CaseResponse> cases = new ConcurrentHashMap<>();
+    private final ComplianceCaseRepository repository;
 
+    public CaseWorkflowService(ComplianceCaseRepository repository) {
+        this.repository = repository;
+    }
+
+    @Transactional
     public CaseResponse createCase(CreateCaseRequest request) {
-        UUID id = UUID.randomUUID();
-        Instant now = Instant.now();
-        CaseResponse response = new CaseResponse(
-                id,
+        ComplianceCase complianceCase = new ComplianceCase(
                 request.walletAddress(),
                 request.title(),
-                CaseStatus.OPEN,
                 request.riskScore(),
-                request.riskLevel(),
-                "unassigned",
-                now,
-                now
+                request.riskLevel()
         );
-        cases.put(id, response);
-        return response;
+        return toResponse(repository.save(complianceCase));
     }
 
-    public List<CaseResponse> listCases() {
-        return new ArrayList<>(cases.values());
-    }
-
-    public CaseResponse getCase(UUID id) {
-        CaseResponse response = cases.get(id);
-        if (response == null) {
-            throw new IllegalArgumentException("Case not found: " + id);
+    @Transactional(readOnly = true)
+    public List<CaseResponse> listCases(CaseStatus status, String walletAddress) {
+        List<ComplianceCase> results;
+        if (status != null) {
+            results = repository.findByStatusOrderByUpdatedAtDesc(status);
+        } else if (walletAddress != null && !walletAddress.isBlank()) {
+            results = repository.findByWalletAddressIgnoreCaseOrderByUpdatedAtDesc(walletAddress);
+        } else {
+            results = repository.findAll();
         }
-        return response;
+        return results.stream().map(this::toResponse).toList();
     }
 
+    @Transactional(readOnly = true)
+    public CaseResponse getCase(UUID id) {
+        return toResponse(findCase(id));
+    }
+
+    @Transactional
     public CaseResponse updateStatus(UUID id, CaseStatus status) {
-        CaseResponse current = getCase(id);
-        CaseResponse updated = new CaseResponse(
-                current.id(),
-                current.walletAddress(),
-                current.title(),
-                status,
-                current.riskScore(),
-                current.riskLevel(),
-                current.assignee(),
-                current.createdAt(),
-                Instant.now()
+        ComplianceCase complianceCase = findCase(id);
+        complianceCase.updateStatus(status);
+        return toResponse(repository.save(complianceCase));
+    }
+
+    private ComplianceCase findCase(UUID id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Case not found: " + id));
+    }
+
+    private CaseResponse toResponse(ComplianceCase complianceCase) {
+        return new CaseResponse(
+                complianceCase.getId(),
+                complianceCase.getWalletAddress(),
+                complianceCase.getTitle(),
+                complianceCase.getStatus(),
+                complianceCase.getRiskScore(),
+                complianceCase.getRiskLevel(),
+                complianceCase.getAssigneeId() == null ? "unassigned" : complianceCase.getAssigneeId().toString(),
+                complianceCase.getCreatedAt(),
+                complianceCase.getUpdatedAt()
         );
-        cases.put(id, updated);
-        return updated;
     }
 }
