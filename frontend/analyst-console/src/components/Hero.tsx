@@ -8,16 +8,16 @@ function HeroArt() {
     <svg viewBox="0 0 280 180" className="hero-art-svg" role="img" aria-hidden="true">
       <defs>
         <linearGradient id="cgLg" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#6aa0ff" />
+          <stop offset="0" stopColor="#10b981" />
           <stop offset="1" stopColor="#bcd4ff" />
         </linearGradient>
         <radialGradient id="cgGlow" cx="50%" cy="50%" r="50%">
-          <stop offset="0" stopColor="#6aa0ff" stopOpacity="0.22" />
-          <stop offset="1" stopColor="#6aa0ff" stopOpacity="0" />
+          <stop offset="0" stopColor="#10b981" stopOpacity="0.22" />
+          <stop offset="1" stopColor="#10b981" stopOpacity="0" />
         </radialGradient>
         <radialGradient id="cgScan" cx="0%" cy="0%" r="100%">
-          <stop offset="0" stopColor="#6aa0ff" stopOpacity="0.32" />
-          <stop offset="1" stopColor="#6aa0ff" stopOpacity="0" />
+          <stop offset="0" stopColor="#10b981" stopOpacity="0.32" />
+          <stop offset="1" stopColor="#10b981" stopOpacity="0" />
         </radialGradient>
         <path id="cgFlow" d="M40 150 H240" fill="none" />
         <clipPath id="cgRadarClip">
@@ -34,7 +34,7 @@ function HeroArt() {
         <circle cx="140" cy="90" r="18" fill="none" stroke="#232a36" strokeWidth="1" />
         <g className="cg-scan">
           <path d="M140 90 L140 32 A58 58 0 0 1 198 90 Z" fill="url(#cgScan)" />
-          <line x1="140" y1="90" x2="140" y2="32" stroke="#6aa0ff" strokeWidth="1.2" strokeOpacity="0.7" />
+          <line x1="140" y1="90" x2="140" y2="32" stroke="#10b981" strokeWidth="1.2" strokeOpacity="0.7" />
         </g>
       </g>
 
@@ -66,12 +66,12 @@ function HeroArt() {
             <mpath href="#cgFlow" />
           </animateMotion>
         </circle>
-        <circle r="2.4" fill="#9bc0ff">
+        <circle r="2.4" fill="#6ee7b7">
           <animateMotion dur="3.6s" begin="1.2s" repeatCount="indefinite">
             <mpath href="#cgFlow" />
           </animateMotion>
         </circle>
-        <circle r="2" fill="#6aa0ff">
+        <circle r="2" fill="#10b981">
           <animateMotion dur="3.6s" begin="2.4s" repeatCount="indefinite">
             <mpath href="#cgFlow" />
           </animateMotion>

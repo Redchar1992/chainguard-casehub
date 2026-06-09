@@ -216,16 +216,16 @@ onMounted(loadRules);
         <svg viewBox="0 0 280 180" class="hero-art-svg" role="img" aria-hidden="true">
           <defs>
             <linearGradient id="cgLg" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stop-color="#6aa0ff" />
+              <stop offset="0" stop-color="#10b981" />
               <stop offset="1" stop-color="#bcd4ff" />
             </linearGradient>
             <radialGradient id="cgGlow" cx="50%" cy="50%" r="50%">
-              <stop offset="0" stop-color="#6aa0ff" stop-opacity="0.22" />
-              <stop offset="1" stop-color="#6aa0ff" stop-opacity="0" />
+              <stop offset="0" stop-color="#10b981" stop-opacity="0.22" />
+              <stop offset="1" stop-color="#10b981" stop-opacity="0" />
             </radialGradient>
             <radialGradient id="cgScan" cx="0%" cy="0%" r="100%">
-              <stop offset="0" stop-color="#6aa0ff" stop-opacity="0.32" />
-              <stop offset="1" stop-color="#6aa0ff" stop-opacity="0" />
+              <stop offset="0" stop-color="#10b981" stop-opacity="0.32" />
+              <stop offset="1" stop-color="#10b981" stop-opacity="0" />
             </radialGradient>
             <clipPath id="cgRadarClip"><circle cx="140" cy="90" r="58" /></clipPath>
           </defs>
@@ -236,7 +236,7 @@ onMounted(loadRules);
             <circle cx="140" cy="90" r="18" fill="none" stroke="#232a36" stroke-width="1" />
             <g class="cg-scan">
               <path d="M140 90 L140 32 A58 58 0 0 1 198 90 Z" fill="url(#cgScan)" />
-              <line x1="140" y1="90" x2="140" y2="32" stroke="#6aa0ff" stroke-width="1.2" stroke-opacity="0.7" />
+              <line x1="140" y1="90" x2="140" y2="32" stroke="#10b981" stroke-width="1.2" stroke-opacity="0.7" />
             </g>
           </g>
           <g class="cg-shield">
