@@ -1,0 +1,3 @@
+security:
+  jwt:
+    secret: chainguard-demo-secret-key-must-be-at-least-32-bytes
